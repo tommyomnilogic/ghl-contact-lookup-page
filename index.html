@@ -546,14 +546,17 @@ async function startAddressEdit(el) {
   el.innerHTML = '';
   el.appendChild(wrap);
 
-  // Listen for place selection
-  autocompleteEl.addEventListener('gmp-placeselect', async (event) => {
+  // Listen for place selection - try both event names
+  const handlePlaceSelect = async (event) => {
     try {
-      const place = event.place;
+      console.log('Place event fired:', event.type, event);
+      const place = event.place || event.detail?.place;
+      if (!place) { console.error('No place in event'); return; }
       await place.fetchFields({ fields: ['addressComponents', 'formattedAddress'] });
 
       let street_number = '', route = '', city = '', state = '', postal = '';
       const components = place.addressComponents || [];
+      console.log('Components:', components);
       for (const comp of components) {
         const types = comp.types || [];
         if (types.includes('street_number')) street_number = comp.longText || comp.long_name || '';
@@ -568,7 +571,10 @@ async function startAddressEdit(el) {
     } catch(err) {
       console.error('Place select error:', err);
     }
-  });
+  };
+  autocompleteEl.addEventListener('gmp-placeselect', handlePlaceSelect);
+  autocompleteEl.addEventListener('gmp-select', handlePlaceSelect);
+  autocompleteEl.addEventListener('place_changed', handlePlaceSelect);
 
   cancelBtn.onclick = (e) => { e.stopPropagation(); el.innerHTML = originalHTML; };
   saveBtn.onclick = (e) => {
