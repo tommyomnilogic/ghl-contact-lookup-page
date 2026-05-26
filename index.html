@@ -803,13 +803,13 @@ function renderApp(contact, opps) {
           ${tags.slice(0, 5).map(t => `<span class="badge green">${t}</span>`).join('')}
           ${tags.length > 5 ? `<span class="badge">+${tags.length - 5} more</span>` : ''}
         </div>
+        <div class="header-actions" style="flex-direction:row;align-items:flex-start;justify-content:flex-start;margin-top:10px;">
+          ${contact.email ? `<a class="btn btn-primary" href="mailto:${contact.email}">✉ Email</a>` : ''}
+          ${contact.phone ? `<a class="btn btn-ghost" href="tel:${contact.phone}">📞 Call</a>` : ''}
+          <a class="btn btn-ghost" href="https://app.gohighlevel.com/v2/location/7ZVXNPvaTTHCO2wcpdnk/contacts/detail/${contact.id}" target="_blank">📄 Docs (Open in GHL)</a>
+        </div>
       </div>
-      <div class="header-actions">
-        ${contact.email ? `<a class="btn btn-primary" href="mailto:${contact.email}">✉ Email</a>` : ''}
-        ${contact.phone ? `<a class="btn btn-ghost" href="tel:${contact.phone}">📞 Call</a>` : ''}
-        <a class="btn btn-ghost" href="https://app.gohighlevel.com/v2/location/7ZVXNPvaTTHCO2wcpdnk/contacts/detail/${contact.id}" target="_blank">📄 Docs (Open in GHL)</a>
     </div>
-
     <div class="grid">
       <div class="card">
         <div class="card-title">Contact Info</div>
