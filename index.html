@@ -583,11 +583,20 @@ async function saveAddressFields(el, address1, city, state, postalCode, original
       body: JSON.stringify({ address1, city, state, postalCode })
     });
     if (!res.ok) throw new Error('Save failed');
-    el.innerHTML = address1 || '<span class="empty">—</span>';
-    el.insertAdjacentHTML('beforeend', '<span class="save-indicator">✓ Saved</span>');
-    setTimeout(() => { const i = el.querySelector('.save-indicator'); if (i) i.remove(); }, 2000);
 
-    // Update city, state, postal fields in the UI
+    // Update address field display
+    el.textContent = address1 || '—';
+    if (!address1) el.classList.add('empty');
+    else el.classList.remove('empty');
+
+    // Flash saved indicator
+    const ind = document.createElement('span');
+    ind.className = 'save-indicator';
+    ind.textContent = '✓ Saved';
+    el.appendChild(ind);
+    setTimeout(() => ind.remove(), 2000);
+
+    // Update city, state, postal fields in the UI without triggering edit mode
     updateFieldDisplay('city', city);
     updateFieldDisplay('state', state);
     updateFieldDisplay('postalCode', postalCode);
@@ -598,12 +607,12 @@ async function saveAddressFields(el, address1, city, state, postalCode, original
 }
 
 function updateFieldDisplay(key, value) {
-  const el = document.querySelector(`[data-key="${key}"]`);
-  if (el) {
-    el.textContent = value || '—';
-    if (!value) el.classList.add('empty');
-    else el.classList.remove('empty');
-  }
+  // Find the field-value span by data-key, but only if it's not in edit mode
+  const el = document.querySelector(`.field-value[data-key="${key}"]`);
+  if (!el || el.querySelector('input, select')) return;
+  el.textContent = value || '—';
+  if (!value) el.classList.add('empty');
+  else el.classList.remove('empty');
 }
 
 function renderOpportunities(opps) {
