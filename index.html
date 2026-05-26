@@ -505,7 +505,7 @@ async function doSearch(q) {
 }
 
 async function loadContact(id) {
-  searchResults.style.display = 'none';
+  if (searchResults) searchResults.style.display = 'none';
   currentContactId = id;
   showState('loading');
   try {
