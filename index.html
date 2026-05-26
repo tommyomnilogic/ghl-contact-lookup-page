@@ -550,36 +550,47 @@ async function startAddressEdit(el) {
   const handlePlaceSelect = async (event) => {
     try {
       console.log('Place event fired:', event.type);
-      // The place object is event.mh for the new PlaceAutocompleteElement
-      const placeObj = event.mh;
-      console.log('Place object:', JSON.stringify(placeObj, null, 2));
+      // Parse address directly from event.mh.ds array
+      // ds[2][0] = full formatted address e.g. "67 Fox Ct, Martinez, CA, USA"
+      const ds = event.mh?.ds;
+      const fullAddress = Array.isArray(ds) && ds[2] ? (Array.isArray(ds[2]) ? ds[2][0] : ds[2]) : autocompleteEl.value;
+      console.log('Full address from ds:', fullAddress);
 
-      // Use Geocoding API to get address components from the place ID or name
-      const placeName = placeObj?.ds?.formattedAddress || placeObj?.ds?.displayName || autocompleteEl.value;
-      console.log('Place name/address:', placeName);
+      // Parse "street, city, state, country" format
+      // Typical format: "67 Fox Ct, Martinez, CA 94553, USA"
+      // Use Place ID with Places API (New) to get components
+      const placeId = Array.isArray(ds) ? ds[1] : null;
+      console.log('Place ID:', placeId);
 
-      // Parse using geocoder
-      const { Geocoder } = await google.maps.importLibrary("geocoding");
-      const geocoder = new Geocoder();
-      geocoder.geocode({ address: placeName }, (results, status) => {
-        console.log('Geocoder status:', status, 'Results:', results);
-        if (status !== 'OK' || !results[0]) {
-          console.error('Geocoder failed:', status);
-          return;
-        }
+      if (placeId) {
+        const { Place } = await google.maps.importLibrary("places");
+        const place = new Place({ id: placeId });
+        await place.fetchFields({ fields: ['addressComponents'] });
         let street_number = '', route = '', city = '', state = '', postal = '';
-        for (const comp of results[0].address_components) {
+        for (const comp of (place.addressComponents || [])) {
           const types = comp.types || [];
-          if (types.includes('street_number')) street_number = comp.long_name;
-          if (types.includes('route')) route = comp.long_name;
-          if (types.includes('locality')) city = comp.long_name;
-          if (types.includes('administrative_area_level_1')) state = comp.short_name;
-          if (types.includes('postal_code')) postal = comp.long_name;
+          if (types.includes('street_number')) street_number = comp.longText || '';
+          if (types.includes('route')) route = comp.longText || '';
+          if (types.includes('locality')) city = comp.longText || '';
+          if (types.includes('administrative_area_level_1')) state = comp.shortText || '';
+          if (types.includes('postal_code')) postal = comp.longText || '';
         }
         const fullStreet = [street_number, route].filter(Boolean).join(' ');
         console.log('Address parsed:', { fullStreet, city, state, postal });
         saveAddressFields(el, fullStreet, city, state, postal, originalHTML);
-      });
+      } else {
+        // Fallback: parse the formatted address string
+        // Format: "67 Fox Ct, Martinez, CA 94553, USA"
+        const parts = fullAddress.split(',').map(s => s.trim());
+        const street = parts[0] || '';
+        const cityPart = parts[1] || '';
+        const stateZip = parts[2] || '';
+        const stateMatch = stateZip.match(/^([A-Z]{2})\s*(\d{5})?/);
+        const state = stateMatch ? stateMatch[1] : '';
+        const postal = stateMatch ? (stateMatch[2] || '') : '';
+        console.log('Fallback parsed:', { street, cityPart, state, postal });
+        saveAddressFields(el, street, cityPart, state, postal, originalHTML);
+      }
     } catch(err) {
       console.error('Place select error:', err);
     }
