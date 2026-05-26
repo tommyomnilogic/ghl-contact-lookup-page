@@ -283,7 +283,59 @@
     .address-hint { font-size: 11px; color: var(--muted); font-style: italic; }
     .pac-container { font-family: 'DM Sans', sans-serif; font-size: 13px; z-index: 9999; }
 
-        /* ── Activity ── */
+        /* ── Contact List ── */
+    #contact-list-section {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 12px 20px 0;
+    }
+    #contact-list {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius);
+      max-height: 320px;
+      overflow-y: auto;
+    }
+    .contact-list-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+    .contact-list-item:last-child { border-bottom: none; }
+    .contact-list-item:hover { background: var(--surface2); }
+    .contact-list-item.active { background: var(--pill-bg); }
+    .contact-list-avatar {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #0a1f5c 0%, #b22234 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 600; color: #fff;
+      flex-shrink: 0;
+    }
+    .contact-list-name { font-size: 13px; color: var(--text); }
+    .contact-list-loading {
+      padding: 16px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .contact-list-count {
+      font-size: 11px;
+      color: var(--muted);
+      padding: 6px 14px;
+      border-top: 1px solid var(--border);
+      text-align: right;
+    }
+
+    /* ── Activity ── */
     .activity-item { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); align-items: flex-start; }
     .activity-item:last-child { border-bottom: none; }
     .activity-icon { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
@@ -313,13 +365,21 @@
     <span class="search-icon">🔍</span>
     <input type="text" id="search-input" placeholder="Search contacts by name, email, or phone…" autocomplete="off" />
   </div>
-  <div id="search-results"></div>
+
+</div>
+
+<!-- Contact List -->
+<div id="contact-list-section">
+  <div id="contact-list">
+    <div class="contact-list-loading"><div class="mini-spinner"></div> Loading contacts…</div>
+  </div>
+  <div class="contact-list-count" id="contact-list-count"></div>
 </div>
 
 <!-- States -->
 <div id="empty-state">
   <div class="empty-icon">👤</div>
-  <p>Search for a contact above to view their profile</p>
+  <p>Select a contact from the list above to view their profile</p>
 </div>
 
 <div id="loading-state">
@@ -340,29 +400,73 @@
 const LOCATION_ID = '7ZVXNPvaTTHCO2wcpdnk';
 let currentContactId = null;
 let searchTimeout = null;
+let allContacts = [];
 
 // ── Search Logic ──
 const searchInput = document.getElementById('search-input');
 const searchResults = document.getElementById('search-results');
+const contactList = document.getElementById('contact-list');
+const contactListCount = document.getElementById('contact-list-count');
+
+// Load all contacts on page load
+async function loadAllContacts() {
+  try {
+    const res = await fetch('/api/contacts');
+    const data = await res.json();
+    allContacts = (data.contacts || []).sort((a, b) => {
+      const nameA = [a.firstName, a.lastName].filter(Boolean).join(' ').toLowerCase();
+      const nameB = [b.firstName, b.lastName].filter(Boolean).join(' ').toLowerCase();
+      return nameA.localeCompare(nameB);
+    });
+    renderContactList(allContacts);
+  } catch(e) {
+    contactList.innerHTML = '<div class="contact-list-loading">Could not load contacts</div>';
+  }
+}
+
+function renderContactList(contacts) {
+  if (!contacts.length) {
+    contactList.innerHTML = '<div class="contact-list-loading">No contacts found</div>';
+    contactListCount.textContent = '';
+    return;
+  }
+  contactList.innerHTML = contacts.map(c => {
+    const name = [c.firstName, c.lastName].filter(Boolean).join(' ') || 'Unknown';
+    return `<div class="contact-list-item" onclick="selectContactFromList('${c.id}', this)">
+      <div class="contact-list-avatar">${initials(name)}</div>
+      <div class="contact-list-name">${name}</div>
+    </div>`;
+  }).join('');
+  contactListCount.textContent = `${contacts.length} contact${contacts.length !== 1 ? 's' : ''}`;
+}
+
+function selectContactFromList(id, el) {
+  document.querySelectorAll('.contact-list-item').forEach(i => i.classList.remove('active'));
+  if (el) el.classList.add('active');
+  loadContact(id);
+}
 
 searchInput.addEventListener('input', () => {
   clearTimeout(searchTimeout);
-  const q = searchInput.value.trim();
-  if (q.length < 2) {
-    searchResults.style.display = 'none';
+  const q = searchInput.value.trim().toLowerCase();
+
+  // Filter the loaded list
+  if (q.length === 0) {
+    renderContactList(allContacts);
     return;
   }
-  searchResults.style.display = 'block';
-  searchResults.innerHTML = `<div class="result-searching"><div class="mini-spinner"></div> Searching…</div>`;
-  searchTimeout = setTimeout(() => doSearch(q), 350);
-});
 
-searchInput.addEventListener('blur', () => {
-  setTimeout(() => { searchResults.style.display = 'none'; }, 200);
-});
-searchInput.addEventListener('focus', () => {
-  if (searchInput.value.trim().length >= 2 && searchResults.innerHTML) {
-    searchResults.style.display = 'block';
+  const filtered = allContacts.filter(c => {
+    const name = [c.firstName, c.lastName].filter(Boolean).join(' ').toLowerCase();
+    return name.includes(q);
+  });
+
+  if (filtered.length > 0) {
+    renderContactList(filtered);
+  } else {
+    // Fall back to API search if nothing in local list
+    contactList.innerHTML = '<div class="contact-list-loading"><div class="mini-spinner"></div> Searching…</div>';
+    searchTimeout = setTimeout(() => doSearch(q), 350);
   }
 });
 
@@ -371,24 +475,9 @@ async function doSearch(q) {
     const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
     const data = await res.json();
     const contacts = data.contacts || [];
-    if (!contacts.length) {
-      searchResults.innerHTML = `<div class="result-empty">No contacts found for "${q}"</div>`;
-      return;
-    }
-    searchResults.innerHTML = contacts.slice(0, 10).map(c => {
-      const name = [c.firstName, c.lastName].filter(Boolean).join(' ') || 'Unknown';
-      const sub = [c.email, fmtPhone(c.phone)].filter(Boolean).join(' · ') || c.id;
-      const ini = initials(name);
-      return `<div class="result-item" onclick="loadContact('${c.id}')">
-        <div class="result-avatar">${ini}</div>
-        <div class="result-info">
-          <div class="result-name">${name}</div>
-          <div class="result-sub">${sub}</div>
-        </div>
-      </div>`;
-    }).join('');
+    renderContactList(contacts);
   } catch(e) {
-    searchResults.innerHTML = `<div class="result-empty">Search failed. Please try again.</div>`;
+    contactList.innerHTML = '<div class="contact-list-loading">Search failed. Please try again.</div>';
   }
 }
 
@@ -858,6 +947,7 @@ async function saveField(el, key, keytype, value, originalHTML) {
 
 // Init
 showState('empty');
+loadAllContacts();
 </script>
 </body>
 </html>
