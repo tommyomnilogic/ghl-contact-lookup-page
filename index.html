@@ -549,26 +549,37 @@ async function startAddressEdit(el) {
   // Listen for place selection - try both event names
   const handlePlaceSelect = async (event) => {
     try {
-      console.log('Place event fired:', event.type, event);
-      console.log('Event detail:', event.detail, 'Event mh:', event.mh);
-      const place = event.place || event.detail?.place || event.mh || event.detail;
-      if (!place) { console.error('No place in event'); return; }
-      await place.fetchFields({ fields: ['addressComponents', 'formattedAddress'] });
+      console.log('Place event fired:', event.type);
+      // The place object is event.mh for the new PlaceAutocompleteElement
+      const placeObj = event.mh;
+      console.log('Place object:', JSON.stringify(placeObj, null, 2));
 
-      let street_number = '', route = '', city = '', state = '', postal = '';
-      const components = place.addressComponents || [];
-      console.log('Components:', components);
-      for (const comp of components) {
-        const types = comp.types || [];
-        if (types.includes('street_number')) street_number = comp.longText || comp.long_name || '';
-        if (types.includes('route')) route = comp.longText || comp.long_name || '';
-        if (types.includes('locality')) city = comp.longText || comp.long_name || '';
-        if (types.includes('administrative_area_level_1')) state = comp.shortText || comp.short_name || '';
-        if (types.includes('postal_code')) postal = comp.longText || comp.long_name || '';
-      }
-      const fullStreet = [street_number, route].filter(Boolean).join(' ');
-      console.log('Address parsed:', { fullStreet, city, state, postal });
-      saveAddressFields(el, fullStreet, city, state, postal, originalHTML);
+      // Use Geocoding API to get address components from the place ID or name
+      const placeName = placeObj?.ds?.formattedAddress || placeObj?.ds?.displayName || autocompleteEl.value;
+      console.log('Place name/address:', placeName);
+
+      // Parse using geocoder
+      const { Geocoder } = await google.maps.importLibrary("geocoding");
+      const geocoder = new Geocoder();
+      geocoder.geocode({ address: placeName }, (results, status) => {
+        console.log('Geocoder status:', status, 'Results:', results);
+        if (status !== 'OK' || !results[0]) {
+          console.error('Geocoder failed:', status);
+          return;
+        }
+        let street_number = '', route = '', city = '', state = '', postal = '';
+        for (const comp of results[0].address_components) {
+          const types = comp.types || [];
+          if (types.includes('street_number')) street_number = comp.long_name;
+          if (types.includes('route')) route = comp.long_name;
+          if (types.includes('locality')) city = comp.long_name;
+          if (types.includes('administrative_area_level_1')) state = comp.short_name;
+          if (types.includes('postal_code')) postal = comp.long_name;
+        }
+        const fullStreet = [street_number, route].filter(Boolean).join(' ');
+        console.log('Address parsed:', { fullStreet, city, state, postal });
+        saveAddressFields(el, fullStreet, city, state, postal, originalHTML);
+      });
     } catch(err) {
       console.error('Place select error:', err);
     }
