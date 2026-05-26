@@ -404,6 +404,19 @@
 <div id="app"></div>
 
 <script>
+// ── Access Control ──
+const VALID_TOKEN = 'FRA2026secure';
+const urlToken = new URLSearchParams(window.location.search).get('token');
+if (urlToken !== VALID_TOKEN) {
+  document.body.innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:#0a1f5c;font-family:'DM Sans',sans-serif;">
+      <div style="color:#b22234;font-size:48px;margin-bottom:16px;">⛔</div>
+      <div style="color:#f0f4ff;font-size:18px;font-weight:600;margin-bottom:8px;">Access Denied</div>
+      <div style="color:#5a6a8a;font-size:13px;">This page must be opened from the GHL menu.</div>
+    </div>`;
+  throw new Error('Access denied');
+}
+
 const LOCATION_ID = '7ZVXNPvaTTHCO2wcpdnk';
 let currentContactId = null;
 let searchTimeout = null;
