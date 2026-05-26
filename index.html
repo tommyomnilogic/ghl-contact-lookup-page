@@ -807,7 +807,7 @@ function renderApp(contact, opps) {
       <div class="header-actions">
         ${contact.email ? `<a class="btn btn-primary" href="mailto:${contact.email}">✉ Email</a>` : ''}
         ${contact.phone ? `<a class="btn btn-ghost" href="tel:${contact.phone}">📞 Call</a>` : ''}
-      </div>
+        <a class="btn btn-ghost" href="https://app.gohighlevel.com/v2/location/7ZVXNPvaTTHCO2wcpdnk/contacts/detail/${contact.id}" target="_blank">📄 Docs (Open in GHL)</a>
     </div>
 
     <div class="grid">
