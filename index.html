@@ -550,7 +550,8 @@ async function startAddressEdit(el) {
   const handlePlaceSelect = async (event) => {
     try {
       console.log('Place event fired:', event.type, event);
-      const place = event.place || event.detail?.place;
+      console.log('Event detail:', event.detail, 'Event mh:', event.mh);
+      const place = event.place || event.detail?.place || event.mh || event.detail;
       if (!place) { console.error('No place in event'); return; }
       await place.fetchFields({ fields: ['addressComponents', 'formattedAddress'] });
 
