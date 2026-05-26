@@ -553,6 +553,24 @@ async function startAddressEdit(el) {
       // Parse address directly from event.mh.ds array
       // ds[2][0] = full formatted address e.g. "67 Fox Ct, Martinez, CA, USA"
       const ds = event.mh?.ds;
+      // ds is a nested structure - the real data is inside Object.values(ds)[0]
+      const dsInner = Object.values(ds || {})[0];
+      console.log('dsInner:', JSON.stringify(dsInner));
+      // dsInner[0] = "places/ChIJ...", dsInner[1] = "ChIJ...", dsInner[2] = ["67 Fox Ct...", ...]
+      const fullAddress = (() => {
+        const addr = Array.isArray(dsInner) ? dsInner[2] : null;
+        if (Array.isArray(addr)) return addr[0];
+        if (typeof addr === 'string') return addr;
+        return autocompleteEl.value;
+      })();
+      console.log('Full address:', fullAddress);
+      let placeId = null;
+      if (Array.isArray(dsInner)) {
+        if (typeof dsInner[1] === 'string' && dsInner[1].startsWith('ChIJ')) placeId = dsInner[1];
+        else if (typeof dsInner[0] === 'string' && dsInner[0].startsWith('places/')) placeId = dsInner[0].replace('places/', '');
+      }
+      console.log('Place ID:', placeId);
+      const ds = event.mh?.ds;
       const dsArr = Object.values(ds || {});
       console.log('dsArr:', JSON.stringify(dsArr));
       const fullAddress = (() => {
