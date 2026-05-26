@@ -548,20 +548,26 @@ async function startAddressEdit(el) {
 
   // Listen for place selection
   autocompleteEl.addEventListener('gmp-placeselect', async (event) => {
-    const place = event.place;
-    await place.fetchFields({ fields: ['addressComponents'] });
+    try {
+      const place = event.place;
+      await place.fetchFields({ fields: ['addressComponents', 'formattedAddress'] });
 
-    let street_number = '', route = '', city = '', state = '', postal = '';
-    for (const comp of place.addressComponents) {
-      const types = comp.types;
-      if (types.includes('street_number')) street_number = comp.longText;
-      if (types.includes('route')) route = comp.longText;
-      if (types.includes('locality')) city = comp.longText;
-      if (types.includes('administrative_area_level_1')) state = comp.shortText;
-      if (types.includes('postal_code')) postal = comp.longText;
+      let street_number = '', route = '', city = '', state = '', postal = '';
+      const components = place.addressComponents || [];
+      for (const comp of components) {
+        const types = comp.types || [];
+        if (types.includes('street_number')) street_number = comp.longText || comp.long_name || '';
+        if (types.includes('route')) route = comp.longText || comp.long_name || '';
+        if (types.includes('locality')) city = comp.longText || comp.long_name || '';
+        if (types.includes('administrative_area_level_1')) state = comp.shortText || comp.short_name || '';
+        if (types.includes('postal_code')) postal = comp.longText || comp.long_name || '';
+      }
+      const fullStreet = [street_number, route].filter(Boolean).join(' ');
+      console.log('Address parsed:', { fullStreet, city, state, postal });
+      saveAddressFields(el, fullStreet, city, state, postal, originalHTML);
+    } catch(err) {
+      console.error('Place select error:', err);
     }
-    const fullStreet = [street_number, route].filter(Boolean).join(' ');
-    saveAddressFields(el, fullStreet, city, state, postal, originalHTML);
   });
 
   cancelBtn.onclick = (e) => { e.stopPropagation(); el.innerHTML = originalHTML; };
