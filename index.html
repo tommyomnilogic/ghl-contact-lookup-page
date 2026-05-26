@@ -553,6 +553,8 @@ async function startAddressEdit(el) {
       // Parse address directly from event.mh.ds array
       // ds[2][0] = full formatted address e.g. "67 Fox Ct, Martinez, CA, USA"
       const ds = event.mh?.ds;
+      console.log('Raw ds:', JSON.stringify(ds));
+      console.log('ds[0]:', ds?.[0], 'ds[1]:', ds?.[1], 'typeof ds[0]:', typeof ds?.[0]);
       const fullAddress = Array.isArray(ds) && ds[2] ? (Array.isArray(ds[2]) ? ds[2][0] : ds[2]) : autocompleteEl.value;
       console.log('Full address from ds:', fullAddress);
 
