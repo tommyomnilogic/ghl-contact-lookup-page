@@ -7,28 +7,27 @@ module.exports = async (req, res) => {
   const LOCATION_ID = process.env.GHL_LOCATION_ID;
   if (!API_KEY) return res.status(500).json({ error: 'GHL_API_KEY not set' });
   try {
-    // Try both search endpoints
     const convSearch = await ghlFetch('/conversations/search?contactId=' + contactId + '&locationId=' + LOCATION_ID + '&limit=20', API_KEY);
     const conversations = convSearch.conversations || convSearch.data || [];
 
     if (!conversations.length) {
-      // Try alternate endpoint
-      const convSearch2 = await ghlFetch('/conversations/?contactId=' + contactId + '&locationId=' + LOCATION_ID + '&limit=20', API_KEY);
-      const conversations2 = convSearch2.conversations || convSearch2.data || [];
-      if (!conversations2.length) return res.json({ messages: [], debug: { convSearch, convSearch2 } });
-      conversations.push(...conversations2);
+      return res.json({ messages: [], debug: 'no conversations found', raw: convSearch });
     }
 
     const allMessages = [];
+    const debugInfo = [];
     for (const conv of conversations.slice(0, 5)) {
       try {
         const msgData = await ghlFetch('/conversations/' + conv.id + '/messages?limit=25', API_KEY);
+        debugInfo.push({ convId: conv.id, rawKeys: Object.keys(msgData), raw: msgData });
         const msgs = msgData.messages?.messages || msgData.messages || [];
         allMessages.push(...msgs);
-      } catch(e) {}
+      } catch(e) {
+        debugInfo.push({ convId: conv.id, error: e.message });
+      }
     }
     allMessages.sort((a, b) => new Date(b.dateAdded) - new Date(a.dateAdded));
-    res.json({ messages: allMessages.slice(0, 50) });
+    res.json({ messages: allMessages.slice(0, 50), debug: debugInfo });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
