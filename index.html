@@ -6,7 +6,7 @@
   <title>Contact Lookup — Federal Retirement Advisors</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBvIfttpNejUfprkOhCsYLDoUwESYeCh6w&libraries=places"></script>
+  <script>(g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.googleapis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({key:"AIzaSyBvIfttpNejUfprkOhCsYLDoUwESYeCh6w",v:"weekly"});</script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -510,16 +510,21 @@ function addressRow(address1) {
   </div>`;
 }
 
-function startAddressEdit(el) {
-  if (el.querySelector('input')) return;
+async function startAddressEdit(el) {
+  if (el.querySelector('input, gmp-place-autocomplete')) return;
   const currentVal = (el.innerText === '—') ? '' : el.innerText.trim();
   const originalHTML = el.innerHTML;
 
-  const input = document.createElement('input');
-  input.className = 'address-input';
-  input.type = 'text';
-  input.value = currentVal;
-  input.placeholder = 'Start typing an address…';
+  // Load Places library (new API)
+  const { PlaceAutocompleteElement } = await google.maps.importLibrary("places");
+
+  // Create the new autocomplete element
+  const autocompleteEl = new PlaceAutocompleteElement({
+    types: ['address'],
+    componentRestrictions: { country: 'us' }
+  });
+  autocompleteEl.style.cssText = 'width:220px;font-size:13px;';
+  if (currentVal) autocompleteEl.value = currentVal;
 
   const hint = document.createElement('div');
   hint.className = 'address-hint';
@@ -536,42 +541,35 @@ function startAddressEdit(el) {
 
   const wrap = document.createElement('div');
   wrap.className = 'address-edit-wrap';
-  wrap.appendChild(input); wrap.appendChild(hint); wrap.appendChild(btnRow);
+  wrap.appendChild(autocompleteEl); wrap.appendChild(hint); wrap.appendChild(btnRow);
 
   el.innerHTML = '';
   el.appendChild(wrap);
-  input.focus();
 
-  // Init Google Places Autocomplete
-  if (window.google && window.google.maps && window.google.maps.places) {
-    const autocomplete = new google.maps.places.Autocomplete(input, {
-      types: ['address'],
-      componentRestrictions: { country: 'us' }
-    });
-    autocomplete.addListener('place_changed', () => {
-      const place = autocomplete.getPlace();
-      if (!place.address_components) return;
+  // Listen for place selection
+  autocompleteEl.addEventListener('gmp-placeselect', async (event) => {
+    const place = event.place;
+    await place.fetchFields({ fields: ['addressComponents'] });
 
-      let street_number = '', route = '', city = '', state = '', postal = '';
-      for (const comp of place.address_components) {
-        const types = comp.types;
-        if (types.includes('street_number')) street_number = comp.long_name;
-        if (types.includes('route')) route = comp.long_name;
-        if (types.includes('locality')) city = comp.long_name;
-        if (types.includes('administrative_area_level_1')) state = comp.short_name;
-        if (types.includes('postal_code')) postal = comp.long_name;
-      }
-      const fullStreet = [street_number, route].filter(Boolean).join(' ');
-      input.value = fullStreet;
-
-      // Save all address fields together
-      saveAddressFields(el, fullStreet, city, state, postal, originalHTML);
-    });
-  }
+    let street_number = '', route = '', city = '', state = '', postal = '';
+    for (const comp of place.addressComponents) {
+      const types = comp.types;
+      if (types.includes('street_number')) street_number = comp.longText;
+      if (types.includes('route')) route = comp.longText;
+      if (types.includes('locality')) city = comp.longText;
+      if (types.includes('administrative_area_level_1')) state = comp.shortText;
+      if (types.includes('postal_code')) postal = comp.longText;
+    }
+    const fullStreet = [street_number, route].filter(Boolean).join(' ');
+    saveAddressFields(el, fullStreet, city, state, postal, originalHTML);
+  });
 
   cancelBtn.onclick = (e) => { e.stopPropagation(); el.innerHTML = originalHTML; };
-  saveBtn.onclick = (e) => { e.stopPropagation(); saveField(el, 'address1', null, input.value, originalHTML); };
-  input.onkeydown = (e) => { if (e.key === 'Escape') cancelBtn.click(); };
+  saveBtn.onclick = (e) => {
+    e.stopPropagation();
+    const typedVal = autocompleteEl.value || '';
+    saveField(el, 'address1', null, typedVal, originalHTML);
+  };
 }
 
 async function saveAddressFields(el, address1, city, state, postalCode, originalHTML) {
