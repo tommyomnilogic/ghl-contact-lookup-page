@@ -438,10 +438,13 @@ function renderContactList(contacts) {
     return;
   }
   contactList.innerHTML = contacts.map(c => {
-    const name = [c.firstName, c.lastName].filter(Boolean).join(' ') || 'Unknown';
-    return `<div class="contact-list-item" onclick="selectContactFromList('${c.id}', this)">
-      <div class="contact-list-avatar">${initials(name)}</div>
-      <div class="contact-list-name">${name}</div>
+    const fullName = [c.firstName, c.lastName].filter(Boolean).join(' ') || 'Unknown';
+    const displayName = c.lastName
+      ? `${c.lastName}, ${c.firstName || ''}`.trim().replace(/,$/, '')
+      : (c.firstName || 'Unknown');
+    return `<div class="contact-list-item" onclick="selectContactFromList('${c.id}', this)" title="${fullName}">
+      <div class="contact-list-avatar">${initials(fullName)}</div>
+      <div class="contact-list-name">${displayName}</div>
     </div>`;
   }).join('');
   contactListCount.textContent = `${contacts.length} contact${contacts.length !== 1 ? 's' : ''}`;
