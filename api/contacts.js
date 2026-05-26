@@ -12,12 +12,11 @@ module.exports = async (req, res) => {
   if (!LOCATION_ID) return res.status(500).json({ error: 'GHL_LOCATION_ID not set' });
 
   try {
-    // Fetch up to 3 pages of 100 contacts = 300 contacts
     let allContacts = [];
     let page = 1;
     while (page <= 3) {
       const data = await ghlFetch(
-        `/contacts/?locationId=${LOCATION_ID}&limit=100&page=${page}&sortBy=lastName&sortOrder=asc`,
+        `/contacts/?locationId=${LOCATION_ID}&limit=100&page=${page}`,
         API_KEY
       );
       const batch = data.contacts || [];
@@ -25,6 +24,12 @@ module.exports = async (req, res) => {
       if (batch.length < 100) break;
       page++;
     }
+    // Sort alphabetically by name on our side
+    allContacts.sort((a, b) => {
+      const nameA = [a.firstName, a.lastName].filter(Boolean).join(' ').toLowerCase();
+      const nameB = [b.firstName, b.lastName].filter(Boolean).join(' ').toLowerCase();
+      return nameA.localeCompare(nameB);
+    });
     res.json({ contacts: allContacts });
   } catch (err) {
     res.status(500).json({ error: err.message });
