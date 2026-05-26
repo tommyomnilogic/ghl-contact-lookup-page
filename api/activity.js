@@ -9,25 +9,17 @@ module.exports = async (req, res) => {
   try {
     const convSearch = await ghlFetch('/conversations/search?contactId=' + contactId + '&locationId=' + LOCATION_ID + '&limit=20', API_KEY);
     const conversations = convSearch.conversations || convSearch.data || [];
-
-    if (!conversations.length) {
-      return res.json({ messages: [], debug: 'no conversations found', raw: convSearch });
-    }
-
+    if (!conversations.length) return res.json({ messages: [] });
     const allMessages = [];
-    const debugInfo = [];
     for (const conv of conversations.slice(0, 5)) {
       try {
         const msgData = await ghlFetch('/conversations/' + conv.id + '/messages?limit=25', API_KEY);
-        debugInfo.push({ convId: conv.id, rawKeys: Object.keys(msgData), raw: msgData });
         const msgs = msgData.messages?.messages || msgData.messages || [];
         allMessages.push(...msgs);
-      } catch(e) {
-        debugInfo.push({ convId: conv.id, error: e.message });
-      }
+      } catch(e) {}
     }
     allMessages.sort((a, b) => new Date(b.dateAdded) - new Date(a.dateAdded));
-    res.json({ messages: allMessages.slice(0, 50), debug: debugInfo });
+    res.json({ messages: allMessages.slice(0, 50) });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

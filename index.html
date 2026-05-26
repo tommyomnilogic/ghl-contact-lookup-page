@@ -856,7 +856,8 @@ function renderApp(contact, opps) {
 
 // ── Activity ──
 const MSG_TYPE_MAP = {
-  1: { label: 'SMS', icon: '💬', cls: 'sms' },
+  // Numeric types
+  1: { label: 'Call', icon: '📞', cls: 'call' },
   2: { label: 'Email', icon: '✉️', cls: 'email' },
   3: { label: 'Email', icon: '✉️', cls: 'email' },
   4: { label: 'SMS', icon: '💬', cls: 'sms' },
@@ -866,15 +867,28 @@ const MSG_TYPE_MAP = {
   8: { label: 'Note', icon: '📝', cls: 'note' },
   25: { label: 'Call', icon: '📞', cls: 'call' },
   26: { label: 'Voicemail', icon: '📞', cls: 'call' },
+  34: { label: 'Call', icon: '📞', cls: 'call' },
+  // String types from API
+  'TYPE_CALL': { label: 'Call', icon: '📞', cls: 'call' },
+  'TYPE_EMAIL': { label: 'Email', icon: '✉️', cls: 'email' },
+  'TYPE_SMS': { label: 'SMS', icon: '💬', cls: 'sms' },
+  'TYPE_NOTE': { label: 'Note', icon: '📝', cls: 'note' },
+  'TYPE_VOICEMAIL': { label: 'Voicemail', icon: '🎙️', cls: 'call' },
+  'TYPE_WHATSAPP': { label: 'WhatsApp', icon: '💬', cls: 'sms' },
+  'TYPE_CUSTOM_CALL': { label: 'Call', icon: '📞', cls: 'call' },
+  'TYPE_ACTIVITY': { label: 'Activity', icon: '🔔', cls: 'other' },
 };
 
 function renderActivity(messages) {
   if (!messages || messages.length === 0) return '<span class="empty">No activity yet</span>';
   return messages.map(m => {
-    const typeInfo = MSG_TYPE_MAP[m.messageType] || { label: 'Activity', icon: '🔔', cls: 'other' };
+    const typeInfo = MSG_TYPE_MAP[m.messageType] || MSG_TYPE_MAP[m.type] || { label: 'Activity', icon: '🔔', cls: 'other' };
     const direction = m.direction === 'inbound' ? '← ' : '→ ';
-    const body = m.body || m.subject || (m.attachments?.length ? `${m.attachments.length} attachment(s)` : '—');
-    const truncated = body.length > 60 ? body.substring(0, 60) + '…' : body;
+    const subject = m.meta?.email?.subject || m.subject || '';
+    const body = m.body || subject || (m.attachments?.length ? `${m.attachments.length} attachment(s)` : '—');
+    const callStatus = m.meta?.call?.status || m.status || '';
+    const displayBody = typeInfo.cls === 'call' ? (callStatus || 'Call') : body;
+    const truncated = displayBody.length > 60 ? displayBody.substring(0, 60) + '…' : displayBody;
     const time = m.dateAdded ? new Date(m.dateAdded).toLocaleDateString('en-US', {
       month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'
     }) : '';
