@@ -882,12 +882,18 @@ const MSG_TYPE_MAP = {
 function renderActivity(messages) {
   if (!messages || messages.length === 0) return '<span class="empty">No activity yet</span>';
   return messages.map(m => {
-    const typeInfo = MSG_TYPE_MAP[m.messageType] || MSG_TYPE_MAP[m.type] || { label: 'Activity', icon: '🔔', cls: 'other' };
+    const typeKey = m.messageType || m.type;
+    const typeInfo = MSG_TYPE_MAP[typeKey] || MSG_TYPE_MAP[m.type] || (() => {
+      // Infer from meta if available
+      if (m.meta?.call) return { label: 'Call', icon: '📞', cls: 'call' };
+      if (m.meta?.email) return { label: 'Email', icon: '✉️', cls: 'email' };
+      return { label: 'Activity', icon: '🔔', cls: 'other' };
+    })();
     const direction = m.direction === 'inbound' ? '← ' : '→ ';
     const subject = m.meta?.email?.subject || m.subject || '';
     const body = m.body || subject || (m.attachments?.length ? `${m.attachments.length} attachment(s)` : '—');
-    const callStatus = m.meta?.call?.status || m.status || '';
-    const displayBody = typeInfo.cls === 'call' ? (callStatus || 'Call') : body;
+    const callStatus = m.meta?.call?.status || '';
+    const displayBody = typeInfo.cls === 'call' ? (callStatus ? callStatus.charAt(0).toUpperCase() + callStatus.slice(1) : 'Call') : body;
     const truncated = displayBody.length > 60 ? displayBody.substring(0, 60) + '…' : displayBody;
     const time = m.dateAdded ? new Date(m.dateAdded).toLocaleDateString('en-US', {
       month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'
