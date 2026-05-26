@@ -553,20 +553,18 @@ async function startAddressEdit(el) {
       // Parse address directly from event.mh.ds array
       // ds[2][0] = full formatted address e.g. "67 Fox Ct, Martinez, CA, USA"
       const ds = event.mh?.ds;
-      console.log('Raw ds:', JSON.stringify(ds));
-      console.log('ds[0]:', ds?.[0], 'ds[1]:', ds?.[1], 'typeof ds[0]:', typeof ds?.[0]);
-      const fullAddress = Array.isArray(ds) && ds[2] ? (Array.isArray(ds[2]) ? ds[2][0] : ds[2]) : autocompleteEl.value;
-      console.log('Full address from ds:', fullAddress);
-
-      // Parse "street, city, state, country" format
-      // Typical format: "67 Fox Ct, Martinez, CA 94553, USA"
-      // Use Place ID with Places API (New) to get components
-      // ds[0] = "places/ChIJ...", ds[1] = "ChIJ..."
+      const dsArr = Object.values(ds || {});
+      console.log('dsArr:', JSON.stringify(dsArr));
+      const fullAddress = (() => {
+        const addr = dsArr[2];
+        if (Array.isArray(addr)) return addr[0];
+        if (typeof addr === 'string') return addr;
+        return autocompleteEl.value;
+      })();
+      console.log('Full address:', fullAddress);
       let placeId = null;
-      if (Array.isArray(ds)) {
-        if (typeof ds[1] === 'string' && ds[1].startsWith('ChIJ')) placeId = ds[1];
-        else if (typeof ds[0] === 'string' && ds[0].startsWith('places/')) placeId = ds[0].replace('places/', '');
-      }
+      if (typeof dsArr[1] === 'string' && dsArr[1].startsWith('ChIJ')) placeId = dsArr[1];
+      else if (typeof dsArr[0] === 'string' && dsArr[0].startsWith('places/')) placeId = dsArr[0].replace('places/', '');
       console.log('Place ID:', placeId);
 
       if (placeId) {
