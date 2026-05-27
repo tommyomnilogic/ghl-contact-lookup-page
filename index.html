@@ -267,6 +267,37 @@
     .opp-value { color: var(--accent2); font-weight: 500; }
     .opp-stage { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: rgba(79,142,247,0.12); color: var(--pill-text); }
 
+    /* ── Resizable Columns ── */
+    #main-columns {
+      display: flex;
+      gap: 0;
+      align-items: flex-start;
+      padding-bottom: 60px;
+    }
+    #left-col { flex: 0 0 40%; min-width: 200px; max-width: 80%; display: flex; flex-direction: column; gap: 16px; }
+    #right-col { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 16px; padding-left: 16px; }
+    #col-resizer {
+      width: 6px;
+      cursor: col-resize;
+      background: transparent;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 10;
+      transition: background 0.15s;
+    }
+    #col-resizer:hover, #col-resizer.dragging { background: var(--accent); border-radius: 3px; }
+    #col-resizer::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 0; bottom: 0;
+      width: 2px;
+      transform: translateX(-50%);
+      background: var(--border2);
+      border-radius: 2px;
+    }
+    #col-resizer:hover::after, #col-resizer.dragging::after { background: var(--accent); }
+
     /* ── Notes ── */
     .notes-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
     .note-item {
@@ -875,9 +906,9 @@ function renderApp(contact, opps) {
         </div>
       </div>
     </div>
-    <div style="display:flex;gap:16px;align-items:flex-start;padding-bottom:60px;">
+    <div id="main-columns">
       <!-- Left column: 5 grouped cards -->
-      <div style="flex:1;display:flex;flex-direction:column;gap:16px;min-width:0;">
+      <div id="left-col">
 
         <!-- Group 1: Personal Info -->
         <div class="card">
@@ -973,8 +1004,9 @@ function renderApp(contact, opps) {
 
       </div>
 
+      <div id="col-resizer"></div>
       <!-- Right column: Activity + Notes -->
-      <div style="flex:1;display:flex;flex-direction:column;gap:16px;min-width:0;">
+      <div id="right-col">
         <div class="card">
           <div class="card-title">Activity</div>
           <div id="activity-feed"><span class="saving-indicator">Loading activity…</span></div>
@@ -1041,7 +1073,17 @@ function renderActivity(messages) {
     const body = m.body || subject || (m.attachments?.length ? `${m.attachments.length} attachment(s)` : '—');
     const callStatus = m.meta?.call?.status || '';
     const displayBody = typeInfo.cls === 'call' ? (callStatus ? callStatus.charAt(0).toUpperCase() + callStatus.slice(1) : 'Call') : body;
-    const truncated = displayBody.length > 60 ? displayBody.substring(0, 60) + '…' : displayBody;
+    // Decode URL-encoded strings and clean up long URLs
+    let cleanBody = displayBody;
+    try { cleanBody = decodeURIComponent(displayBody); } catch(e) {}
+    // Replace long URLs with shortened version
+    cleanBody = cleanBody.replace(/https?:\/\/[^\s]{60,}/g, url => {
+      try {
+        const u = new URL(url);
+        return u.hostname + '/…';
+      } catch(e) { return url.substring(0, 60) + '…'; }
+    });
+    const truncated = cleanBody.length > 120 ? cleanBody.substring(0, 120) + '…' : cleanBody;
     const time = m.dateAdded ? new Date(m.dateAdded).toLocaleDateString('en-US', {
       month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'
     }) : '';
@@ -1184,6 +1226,45 @@ async function submitNote() {
     status.className = 'note-status error';
   }
 }
+
+// ── Resizable Columns ──
+(function() {
+  const resizer = document.getElementById('col-resizer');
+  const leftCol = document.getElementById('left-col');
+  const container = document.getElementById('main-columns');
+  if (!resizer || !leftCol || !container) return;
+
+  let isResizing = false;
+  let startX = 0;
+  let startWidth = 0;
+
+  resizer.addEventListener('mousedown', (e) => {
+    isResizing = true;
+    startX = e.clientX;
+    startWidth = leftCol.offsetWidth;
+    resizer.classList.add('dragging');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isResizing) return;
+    const dx = e.clientX - startX;
+    const containerWidth = container.offsetWidth;
+    const newWidth = Math.min(Math.max(startWidth + dx, 200), containerWidth - 200);
+    leftCol.style.flex = 'none';
+    leftCol.style.width = newWidth + 'px';
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!isResizing) return;
+    isResizing = false;
+    resizer.classList.remove('dragging');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  });
+})();
 
 // Init
 showState('empty');
