@@ -578,6 +578,7 @@ async function loadContact(id) {
     loadActivity(id);
     loadNotes(id);
     showState('app');
+    setTimeout(initResizer, 50);
   } catch(err) {
     showError('Could not load contact', err.message);
   }
@@ -1228,11 +1229,14 @@ async function submitNote() {
 }
 
 // ── Resizable Columns ──
-(function() {
+let resizerInitialized = false;
+function initResizer() {
+  if (resizerInitialized) return;
   const resizer = document.getElementById('col-resizer');
   const leftCol = document.getElementById('left-col');
   const container = document.getElementById('main-columns');
   if (!resizer || !leftCol || !container) return;
+  resizerInitialized = true;
 
   let isResizing = false;
   let startX = 0;
@@ -1264,7 +1268,7 @@ async function submitNote() {
     document.body.style.cursor = '';
     document.body.style.userSelect = '';
   });
-})();
+}
 
 // Init
 showState('empty');
