@@ -815,8 +815,7 @@ function renderApp(contact, opps) {
   const customFields = contact.customFields || [];
   const dnd = contact.dnd;
 
-  const generalRows = GENERAL_INFO_FIELDS.map(f => cfRowEditable(f, customFields)).join('');
-  const additionalRows = ADDITIONAL_INFO_FIELDS.map(f => cfRowEditable(f, customFields)).join('');
+  const allCustomRows = [...GENERAL_INFO_FIELDS, ...ADDITIONAL_INFO_FIELDS].map(f => cfRowEditable(f, customFields)).join('');
 
   // Update search input to show selected contact name
   searchInput.value = name;
@@ -845,44 +844,115 @@ function renderApp(contact, opps) {
       </div>
     </div>
     <div class="grid">
-      <div class="card">
-        <div class="card-title">Contact Info</div>
-        ${fieldRow('Email', contact.email, '', 'email')}
-        ${fieldRow('Phone', fmtPhone(contact.phone), '', 'phone')}
-        ${addressRow(contact.address1)}
-        ${fieldRow('City', contact.city, '', 'city')}
-        ${fieldRow('State', contact.state, '', 'state')}
-        ${fieldRow('Postal Code', contact.postalCode, '', 'postalCode')}
-        ${fieldRow('Type', contact.type, '', 'type', 'select', ['lead','contact','customer'])}
-        ${fieldRow('Source', contact.source, '', 'source')}
-        ${fieldRow('Date Added', fmtDate(contact.dateAdded))}
+      <!-- Left column: 5 grouped cards -->
+      <div style="display:flex;flex-direction:column;gap:16px;">
+
+        <!-- Group 1: Personal Info -->
+        <div class="card">
+          <div class="card-title">Personal Info</div>
+          ${cfRowEditable({id:'PgC2vGPMs8Zpp3ujZBoq',label:'Preferred Name'}, customFields)}
+          ${fieldRow('Email', contact.email, '', 'email')}
+          ${fieldRow('Phone', fmtPhone(contact.phone), '', 'phone')}
+          ${addressRow(contact.address1)}
+          ${fieldRow('City', contact.city, '', 'city')}
+          ${fieldRow('State', contact.state, '', 'state')}
+          ${fieldRow('Postal Code', contact.postalCode, '', 'postalCode')}
+          ${fieldRow('Date Added', fmtDate(contact.dateAdded))}
+          ${fieldRow('Type', contact.type, '', 'type', 'select', ['lead','contact','customer'])}
+          ${fieldRow('Source', contact.source, '', 'source')}
+          ${cfRowEditable({id:'KFJkcc2Bgw2tA4c177yK',label:'Birth Year'}, customFields)}
+          ${cfRowEditable({id:'IfjotQAJPU6EJhFFMMl3',label:'Retirement Date',date:true}, customFields)}
+          ${cfRowEditable({id:'RBOZMOhgKE2k0wJL1Cnt',label:'Retirement Year'}, customFields)}
+          ${cfRowEditable({id:'XHE7TrEnWXO4Ejq2b648',label:'1st Meeting Date',date:true}, customFields)}
+          ${cfRowEditable({id:'oEdb37OTfAipWbVuExCY',label:'2nd Meeting Date',date:true}, customFields)}
+          ${cfRowEditable({id:'2rKyo94bWSDIv514LR4J',label:'Marital Status',options:['Married','Single','Divorced','Widow']}, customFields)}
+          ${cfRowEditable({id:'grnGNXA0ixK2jmsWITSQ',label:'Spouse Name'}, customFields)}
+          ${cfRowEditable({id:'dXzmPzZIkcfiVhQ63uXP',label:'Spouse Age'}, customFields)}
+          ${cfRowEditable({id:'A4BmlS771VxopQ3YdvGE',label:'Spouse DOB',date:true}, customFields)}
+          ${cfRowEditable({id:'ITRX1D15OvofcSEmXAcB',label:'Spouse Phone'}, customFields)}
+          ${cfRowEditable({id:'cAN2YeLZPWIB4UApyInQ',label:'Spouse Retired?',options:['yes','no']}, customFields)}
+        </div>
+
+        <!-- Group 2: Employment & Contact -->
+        <div class="card">
+          <div class="card-title">Employment &amp; Contact</div>
+          ${cfRowEditable({id:'b0wEQANcGYHcbDfRT4AJ',label:'Contact Status',options:['Client','Prospect','Contact']}, customFields)}
+          ${cfRowEditable({id:'ELWBSXFvhVVvxVOqzEO2',label:'Best Time to Call',options:['7:00 a.m.','8:00 a.m.','9:00 a.m.','10:00 a.m.','11:00 a.m.','noon','1:00 p.m.','2:00 p.m.','3:00 p.m.','4:00 p.m.','5:00 p.m.','6:00 p.m.','7:00 p.m.']}, customFields)}
+          ${cfRowEditable({id:'1RQ5dAffKzGUUypVNzp2',label:'Can-Call Status',options:['Can Call','Do Not Call']}, customFields)}
+          ${cfRowEditable({id:'RoopNCXDAwZZERW3bh4J',label:'Years of Federal Service'}, customFields)}
+          ${cfRowEditable({id:'TQPdKDBdd31UxVjWz1YS',label:'Year Eligible to Retire'}, customFields)}
+          ${cfRowEditable({id:'OOtRQwHFiLs86Qpx2jMb',label:'Employer'}, customFields)}
+          ${cfRowEditable({id:'g3kY833ibLihiKSP7jLr',label:'Gross Salary'}, customFields)}
+          ${cfRowEditable({id:'sCS5S08EkIvOiznwKg2q',label:'Unused Sick Leave'}, customFields)}
+          ${cfRowEditable({id:'VETXzkq5snP3erQJfXPZ',label:'Unused Annual Leave/Vacation'}, customFields)}
+          ${cfRowEditable({id:'V1qBG5XlC7LcR32FLqqD',label:'Referred By'}, customFields)}
+        </div>
+
+        <!-- Group 3: Financials -->
+        <div class="card">
+          <div class="card-title">Financials</div>
+          ${cfRowEditable({id:'tFiNNhNJb066vdKWgrKo',label:'FEGLI',options:['Basic','Option A','Option B','Option C']}, customFields)}
+          ${cfRowEditable({id:'RVVKyhSH3Qxz9mnzRXRF',label:'Accounts TSP'}, customFields)}
+          ${cfRowEditable({id:'l1M4PuZuz1FTlWtxy0Yc',label:'TSP Contrib Rate'}, customFields)}
+          ${cfRowEditable({id:'Kd76ZgcvqASVPthC9x1G',label:'TSP Current Balance Trad'}, customFields)}
+          ${cfRowEditable({id:'zVbHBmuK7xAK6wX5LbhI',label:'TSP Current Balance Roth'}, customFields)}
+          ${cfRowEditable({id:'RpLli9phPFqUSuzKabKb',label:'Outside IRA $'}, customFields)}
+          ${cfRowEditable({id:'BK3glr35HjxLneisN1L0',label:'Outside Roth IRA $'}, customFields)}
+          ${cfRowEditable({id:'YLZlMhS14a7IKVaJbTx3',label:'Outside Invest. Account $'}, customFields)}
+          ${cfRowEditable({id:'DvPOyeFPEbahfmohc6Be',label:'Outside Savings $'}, customFields)}
+        </div>
+
+        <!-- Group 4: Military & Retirement Planning -->
+        <div class="card">
+          <div class="card-title">Military &amp; Retirement Planning</div>
+          ${cfRowEditable({id:'GmDaTOq3h9xsOw6Y6Oa9',label:'Prior Military',options:['none','Army','Navy','Air Force','Marines','Coast Guard','Intel']}, customFields)}
+          ${cfRowEditable({id:'ZHij5CYEC6LQCtrFhJXK',label:'Military Buyback?'}, customFields)}
+          ${cfRowEditable({id:'36uCz2TI0uHiNCYga4WQ',label:'Military Pension'}, customFields)}
+          ${cfRowEditable({id:'gMLzl6h4BMSyG2lEdZFe',label:'Service Disability $ or %'}, customFields)}
+          ${cfRowEditable({id:'YgKaPu3KILlupOmlklXK',label:'Break in Service- Years'}, customFields)}
+          ${cfRowEditable({id:'zhEYmwBtWmIw9kCnZIeS',label:'Service Comp Date',date:true}, customFields)}
+          ${cfRowEditable({id:'4HC15KMLuTuhTr6TkkxI',label:'Military Service Years'}, customFields)}
+          ${cfRowEditable({id:'6tstB2Kw41NEGgyKjz8m',label:'Retirement- Expect % of Income',options:['100%','90%','75%','50%']}, customFields)}
+          ${cfRowEditable({id:'vuJWbohayRKdo0p4VILB',label:'Soc. Sec.- current $'}, customFields)}
+          ${cfRowEditable({id:'Thz05WfvxjQ5cUCeV5nz',label:'Soc. Sec- Recent Statement?',options:['yes','no']}, customFields)}
+          ${cfRowEditable({id:'xSuD14cOI6WJG0K8fDuf',label:'Soc. Sec.- When did you start?',date:true}, customFields)}
+          ${cfRowEditable({id:'0i7VwqG4t7rQGgS2pz56',label:'Soc. Sec.- Need Month You Retire?',options:['yes','no']}, customFields)}
+          ${cfRowEditable({id:'vKRBlhKb6QoaEEzHSpDL',label:'Retirement Goal',options:['Travel in US','Travel- World','Large Purchase','Retire Early','Donate','Ministry','Help Grandkids','Guaranteed Income','Leave Money']}, customFields)}
+          ${cfRowEditable({id:'wPzBNr0DquIg0D9he3IJ',label:'Current Investment Approach',options:['Conservative','Moderate','Balanced','Aggressive']}, customFields)}
+          ${cfRowEditable({id:'DgyJEA5AHMBZD0PxNtKh',label:'Spouse Break in Service- Years'}, customFields)}
+          ${cfRowEditable({id:'mpr3RPT7DiZ2Vp8vsblO',label:'Spouse Service Comp Date',date:true}, customFields)}
+          ${cfRowEditable({id:'ezc6ZlZIETYMOhKYJAEj',label:'Spouse Military Service Years'}, customFields)}
+          ${cfRowEditable({id:'0CUhHgQW6Mo5qsqd9L1l',label:'Spouse Military Pension'}, customFields)}
+          ${cfRowEditable({id:'Si6ckXV7UkJg2ZDEXsUy',label:'Spouse Prior Military',options:['Army','Navy','Air Force','Marines','Coast Guard','Intel']}, customFields)}
+          ${cfRowEditable({id:'j9CutyUx5HipPYJX1aRv',label:'Spouse Mil Buyback?'}, customFields)}
+          ${cfRowEditable({id:'2bz7AfvZGPzj2CLYfbWA',label:'Spouse Mil Service Disability $ or %'}, customFields)}
+        </div>
+
+        <!-- Group 5: Estate & Documents -->
+        <div class="card">
+          <div class="card-title">Estate &amp; Documents</div>
+          ${cfRowEditable({id:'Y1MD5IFupDOeQowzyMw6',label:'Beneficiary 1'}, customFields)}
+          ${cfRowEditable({id:'633KbtRKNGLUv8qH2Bxs',label:'Beneficiary 2'}, customFields)}
+          ${cfRowEditable({id:'lBA5cQjJcCdxpdpMqHkx',label:'Beneficiary 3'}, customFields)}
+          ${cfRowEditable({id:'EkVkzcpyJRq5S7o92Gwz',label:'Estate Preparedness',options:['Will','Trust','Power of Attorney','Healthcare Power of Atty']}, customFields)}
+          ${cfRowEditable({id:'SFdmzSLf89D99jPcDukF',label:'Documents Sent In',options:['LES','Social Sec Statement','TSP Statement']}, customFields)}
+          ${tags.length > 0 ? `<div class="field-row"><span class="field-label">Tags</span><span class="field-value"><div class="tags-wrap">${tags.map(t => `<span class="tag">${t}</span>`).join('')}</div></span></div>` : ''}
+        </div>
+
       </div>
 
-      <div class="card">
-        <div class="card-title">General Info</div>
-        ${generalRows}
+      <!-- Right column: Activity -->
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="card">
+          <div class="card-title">Activity</div>
+          <div id="activity-feed"><span class="saving-indicator">Loading activity…</span></div>
+        </div>
       </div>
 
-      <div class="card">
-        <div class="card-title">Additional Info</div>
-        ${additionalRows}
-      </div>
-
-      <div class="card">
-        <div class="card-title">Tags</div>
-        ${tags.length > 0
-          ? `<div class="tags-wrap">${tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>`
-          : `<span class="empty">No tags</span>`}
-      </div>
-
+      <!-- Opportunities full width -->
       <div class="card grid-wide">
         <div class="card-title">Opportunities</div>
         ${renderOpportunities(opps)}
-      </div>
-
-      <div class="card grid-wide">
-        <div class="card-title">Activity</div>
-        <div id="activity-feed"><span class="saving-indicator">Loading activity…</span></div>
       </div>
     </div>
   `;
