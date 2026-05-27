@@ -221,7 +221,7 @@
     .btn-ghost { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
 
     /* ── Grid ── */
-    .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+    .grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
     .grid-wide { grid-column: 1 / -1; }
     @media (max-width: 640px) {
       .grid { grid-template-columns: 1fr; }
@@ -875,9 +875,9 @@ function renderApp(contact, opps) {
         </div>
       </div>
     </div>
-    <div class="grid">
+    <div style="display:flex;gap:16px;align-items:flex-start;padding-bottom:60px;">
       <!-- Left column: 5 grouped cards -->
-      <div style="display:flex;flex-direction:column;gap:16px;">
+      <div style="flex:2;display:flex;flex-direction:column;gap:16px;min-width:0;">
 
         <!-- Group 1: Personal Info -->
         <div class="card">
@@ -974,7 +974,7 @@ function renderApp(contact, opps) {
       </div>
 
       <!-- Right column: Activity + Notes -->
-      <div style="display:flex;flex-direction:column;gap:16px;">
+      <div style="flex:1;display:flex;flex-direction:column;gap:16px;min-width:0;">
         <div class="card">
           <div class="card-title">Activity</div>
           <div id="activity-feed"><span class="saving-indicator">Loading activity…</span></div>
@@ -991,9 +991,9 @@ function renderApp(contact, opps) {
           </div>
         </div>
       </div>
-
-      <!-- Opportunities full width -->
-      <div class="card grid-wide">
+    </div><!-- end flex row -->
+    <!-- Opportunities full width -->
+    <div class="card" style="margin-top:16px;">
         <div class="card-title">Opportunities</div>
         ${renderOpportunities(opps)}
       </div>
