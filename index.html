@@ -283,6 +283,8 @@
       z-index: 10;
       transition: background 0.15s;
       margin: 0 4px;
+      align-self: stretch;
+      min-height: 100%;
     }
     #col-resizer:hover, #col-resizer.dragging { background: var(--accent); border-radius: 3px; }
     #col-resizer::after {
@@ -1179,6 +1181,22 @@ async function saveField(el, key, keytype, value, originalHTML) {
 }
 
 // ── Notes ──
+function formatNoteBody(text) {
+  // Decode URL-encoded characters
+  let decoded = text;
+  try { decoded = decodeURIComponent(text.replace(/\+/g, ' ')); } catch(e) { decoded = text; }
+  // Make URLs clickable and truncate display
+  decoded = decoded.replace(/(https?:\/\/[^\s]+)/g, (url) => {
+    let display = url;
+    try {
+      const u = new URL(url);
+      display = u.hostname + (u.pathname.length > 20 ? u.pathname.substring(0, 20) + '…' : u.pathname);
+    } catch(e) {}
+    return `<a href="${url}" target="_blank" style="color:var(--accent);word-break:break-all;">${display}</a>`;
+  });
+  return decoded;
+}
+
 async function loadNotes(contactId) {
   const el = document.getElementById('notes-list');
   if (!el) return;
@@ -1195,7 +1213,7 @@ async function loadNotes(contactId) {
       }) : '';
       return `<div class="note-item">
         <div class="note-meta">${date}</div>
-        <div class="note-body">${n.body || ''}</div>
+        <div class="note-body">${formatNoteBody(n.body || '')}</div>
       </div>`;
     }).join('');
   } catch(e) {
