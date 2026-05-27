@@ -267,6 +267,37 @@
     .opp-value { color: var(--accent2); font-weight: 500; }
     .opp-stage { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: rgba(79,142,247,0.12); color: var(--pill-text); }
 
+    /* ── Notes ── */
+    .notes-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+    .note-item {
+      background: var(--surface2);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      border-left: 3px solid var(--accent);
+    }
+    .note-meta { font-size: 11px; color: var(--muted); margin-bottom: 5px; }
+    .note-body { font-size: 13px; color: var(--text); white-space: pre-wrap; line-height: 1.5; }
+    .note-input-wrap { display: flex; flex-direction: column; gap: 8px; }
+    .note-textarea {
+      width: 100%;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      color: var(--text);
+      background: var(--surface2);
+      border: 1.5px solid var(--border2);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      resize: vertical;
+      min-height: 80px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .note-textarea:focus { border-color: var(--accent); }
+    .note-submit-row { display: flex; justify-content: flex-end; gap: 8px; align-items: center; }
+    .note-status { font-size: 12px; color: var(--muted); }
+    .note-status.success { color: #1a9c4a; }
+    .note-status.error { color: var(--danger); }
+
     /* ── Address Autocomplete ── */
     .address-edit-wrap { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
     .address-input {
@@ -514,6 +545,7 @@ async function loadContact(id) {
     const opps = data.opps?.opportunities || data.opps?.data || [];
     renderApp(contact, opps);
     loadActivity(id);
+    loadNotes(id);
     showState('app');
   } catch(err) {
     showError('Could not load contact', err.message);
@@ -941,11 +973,22 @@ function renderApp(contact, opps) {
 
       </div>
 
-      <!-- Right column: Activity -->
+      <!-- Right column: Activity + Notes -->
       <div style="display:flex;flex-direction:column;gap:16px;">
         <div class="card">
           <div class="card-title">Activity</div>
           <div id="activity-feed"><span class="saving-indicator">Loading activity…</span></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Notes</div>
+          <div class="notes-list" id="notes-list"><span class="saving-indicator">Loading notes…</span></div>
+          <div class="note-input-wrap">
+            <textarea class="note-textarea" id="note-input" placeholder="Add a note…"></textarea>
+            <div class="note-submit-row">
+              <span class="note-status" id="note-status"></span>
+              <button class="btn btn-primary" onclick="submitNote()">Add Note</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1089,6 +1132,56 @@ async function saveField(el, key, keytype, value, originalHTML) {
   } catch(err) {
     el.innerHTML = originalHTML;
     alert('Failed to save. Please try again.');
+  }
+}
+
+// ── Notes ──
+async function loadNotes(contactId) {
+  const el = document.getElementById('notes-list');
+  if (!el) return;
+  try {
+    const data = await fetch(`/api/notes?contactId=${contactId}`).then(r => r.json());
+    const notes = data.notes || [];
+    if (!notes.length) {
+      el.innerHTML = '<span class="empty">No notes yet</span>';
+      return;
+    }
+    el.innerHTML = notes.map(n => {
+      const date = n.dateAdded ? new Date(n.dateAdded).toLocaleDateString('en-US', {
+        month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'
+      }) : '';
+      return `<div class="note-item">
+        <div class="note-meta">${date}</div>
+        <div class="note-body">${n.body || ''}</div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<span class="empty">Could not load notes</span>';
+  }
+}
+
+async function submitNote() {
+  const input = document.getElementById('note-input');
+  const status = document.getElementById('note-status');
+  const text = input.value.trim();
+  if (!text) return;
+  status.textContent = 'Saving…';
+  status.className = 'note-status';
+  try {
+    const res = await fetch(`/api/notes?contactId=${currentContactId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ body: text })
+    });
+    if (!res.ok) throw new Error('Failed to save');
+    input.value = '';
+    status.textContent = '✓ Saved';
+    status.className = 'note-status success';
+    setTimeout(() => { status.textContent = ''; }, 2000);
+    loadNotes(currentContactId);
+  } catch(e) {
+    status.textContent = 'Failed to save';
+    status.className = 'note-status error';
   }
 }
 
