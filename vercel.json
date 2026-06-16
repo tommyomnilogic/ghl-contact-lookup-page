@@ -1,1 +1,9 @@
-{}
+{
+  "redirects": [
+    {
+      "source": "/:path*",
+      "destination": "https://portal.gofedretire.com/lookup.html",
+      "permanent": false
+    }
+  ]
+}
